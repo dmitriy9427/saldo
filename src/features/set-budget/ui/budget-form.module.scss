@@ -1,0 +1,15 @@
+.form {
+  display: grid;
+  gap: 16px;
+}
+
+.error {
+  font-size: 0.8125rem;
+  color: var(--expense);
+}
+
+.footer {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}

@@ -1,0 +1,143 @@
+.form {
+  display: grid;
+  gap: 18px;
+}
+
+.row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+
+  @media (width <= 480px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.amount {
+  position: relative;
+}
+
+.amountInput {
+  height: 56px;
+  padding-right: 40px;
+  font-size: 1.75rem;
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+}
+
+.currency {
+  position: absolute;
+  top: 50%;
+  right: 14px;
+  font-size: 1.25rem;
+  color: var(--muted);
+  pointer-events: none;
+  translate: 0 -50%;
+}
+
+.categories {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+  padding: 0;
+  margin: 0;
+  border: 0;
+}
+
+.legend {
+  padding: 0;
+  margin-bottom: 6px;
+  font-size: 0.8125rem;
+  font-weight: 550;
+  color: var(--muted);
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.chip {
+  // Внутри — визуально скрытая радиокнопка (position: absolute): пусть она
+  // остаётся в границах чипа, а не «улетает» к ближайшему позиционированному предку.
+  position: relative;
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
+  padding: 4px 10px 4px 4px;
+  font-size: 0.875rem;
+  cursor: pointer;
+  user-select: none;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  transition:
+    border-color 0.15s,
+    background-color 0.15s;
+
+  &:hover {
+    background: var(--surface-2);
+  }
+
+  &:has(:focus-visible) {
+    outline: 2px solid var(--accent);
+    outline-offset: 1px;
+  }
+
+  [aria-invalid='true'] & {
+    border-color: color-mix(in srgb, var(--expense) 50%, var(--border));
+  }
+}
+
+.selected {
+  background: var(--accent-soft);
+  border-color: var(--accent);
+
+  &:hover {
+    background: var(--accent-soft);
+  }
+}
+
+// Радиокнопка спрятана визуально, но доступна с клавиатуры и скринридеру.
+.radio {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+}
+
+.quick {
+  display: flex;
+  gap: 10px;
+}
+
+.link {
+  padding: 0;
+  font: inherit;
+  color: var(--accent);
+  cursor: pointer;
+  background: none;
+  border: 0;
+
+  &:hover {
+    text-decoration: underline;
+  }
+}
+
+.active {
+  color: var(--muted);
+}
+
+.error {
+  font-size: 0.8125rem;
+  color: var(--expense);
+}
+
+.footer {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+  padding-top: 4px;
+}

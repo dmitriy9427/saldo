@@ -1,0 +1,29 @@
+.root {
+  display: flex;
+  gap: 2px;
+  padding: 3px;
+  background: var(--surface-2);
+  border-radius: var(--radius-sm);
+}
+
+.option {
+  display: grid;
+  flex: 1;
+  place-items: center;
+  height: 28px;
+  color: var(--muted);
+  cursor: pointer;
+  background: none;
+  border: 0;
+  border-radius: 6px;
+
+  svg {
+    width: 15px;
+  }
+
+  &[aria-checked='true'] {
+    color: var(--text);
+    background: var(--surface);
+    box-shadow: var(--shadow-sm);
+  }
+}

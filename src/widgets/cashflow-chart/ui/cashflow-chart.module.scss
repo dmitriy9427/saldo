@@ -1,0 +1,104 @@
+.card {
+  min-height: 360px;
+}
+
+.chart {
+  // Клик по месяцу — выбор месяца для всей страницы.
+  cursor: pointer;
+
+  :global(.recharts-surface):focus {
+    outline: none;
+  }
+}
+
+.grid line {
+  stroke: var(--border);
+}
+
+.axis :global(text) {
+  font-size: 12px;
+  fill: var(--muted);
+}
+
+.income {
+  color: var(--income);
+}
+
+.expense {
+  color: var(--expense-chart);
+}
+
+.column {
+  opacity: 0.4;
+  transition: opacity 0.2s;
+}
+
+.selected {
+  opacity: 1;
+}
+
+.cursor {
+  fill: var(--surface-2);
+}
+
+.tooltip {
+  display: grid;
+  gap: 4px;
+  min-width: 190px;
+  padding: 10px 12px;
+  font-size: 0.8125rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-lg);
+
+  p {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+  }
+
+  p > span:last-child {
+    margin-left: auto;
+    font-weight: 600;
+  }
+}
+
+.tooltipTitle {
+  font-weight: 650;
+}
+
+.net {
+  padding-top: 4px;
+  margin-top: 2px;
+  border-top: 1px solid var(--border);
+}
+
+.legend {
+  display: flex;
+  gap: 14px;
+  font-size: 0.8125rem;
+  color: var(--muted);
+
+  span {
+    display: inline-flex;
+    gap: 6px;
+    align-items: center;
+  }
+}
+
+.dotIncome,
+.dotExpense {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+}
+
+.dotIncome {
+  background: var(--income);
+}
+
+.dotExpense {
+  background: var(--expense-chart);
+}

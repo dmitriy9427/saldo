@@ -1,0 +1,25 @@
+.stack {
+  display: grid;
+  gap: 16px;
+}
+
+.link {
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
+  height: 40px;
+  padding: 0 12px;
+  font-weight: 550;
+  color: var(--muted);
+  text-decoration: none;
+  border-radius: var(--radius-sm);
+
+  svg {
+    width: 18px;
+  }
+
+  &:hover {
+    color: var(--text);
+    background: var(--surface-2);
+  }
+}

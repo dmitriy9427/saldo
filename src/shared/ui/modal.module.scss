@@ -1,0 +1,109 @@
+.dialog {
+  width: min(520px, calc(100vw - 24px));
+  max-height: calc(100dvh - 48px);
+  padding: 0;
+  margin: auto;
+  color: var(--text);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  opacity: 0;
+  translate: 0 12px;
+  transition:
+    opacity 0.2s,
+    translate 0.2s,
+    overlay 0.2s allow-discrete,
+    display 0.2s allow-discrete;
+
+  &[open] {
+    opacity: 1;
+    translate: 0;
+
+    // Начальное состояние появления: из прозрачного и чуть ниже.
+    @starting-style {
+      opacity: 0;
+      translate: 0 12px;
+    }
+  }
+
+  &::backdrop {
+    background: rgb(10 12 20 / 0%);
+    backdrop-filter: blur(0);
+    transition:
+      background 0.2s,
+      backdrop-filter 0.2s,
+      overlay 0.2s allow-discrete,
+      display 0.2s allow-discrete;
+  }
+
+  &[open]::backdrop {
+    background: rgb(10 12 20 / 45%);
+    backdrop-filter: blur(3px);
+
+    @starting-style {
+      background: rgb(10 12 20 / 0%);
+      backdrop-filter: blur(0);
+    }
+  }
+
+  // На телефоне — лист снизу.
+  @media (width <= 600px) {
+    width: 100vw;
+    max-width: none;
+    margin: auto 0 0;
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+  }
+}
+
+.box {
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  max-height: inherit;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 20px 8px;
+}
+
+.title {
+  font-size: 1.125rem;
+  font-weight: 650;
+}
+
+.close {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  color: var(--muted);
+  cursor: pointer;
+  background: none;
+  border: 0;
+  border-radius: 8px;
+
+  &:hover {
+    color: var(--text);
+    background: var(--surface-2);
+  }
+
+  svg {
+    width: 18px;
+  }
+}
+
+.body {
+  padding: 8px 20px 20px;
+  overflow-y: auto;
+}
+
+.footer {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+  padding: 14px 20px;
+  border-top: 1px solid var(--border);
+}

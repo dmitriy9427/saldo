@@ -1,0 +1,103 @@
+.stale {
+  opacity: 0.6;
+  transition: opacity 0.2s;
+}
+
+.layout {
+  display: grid;
+  grid-template-columns: 180px minmax(0, 1fr);
+  gap: 24px;
+  align-items: center;
+
+  @media (width <= 560px) {
+    grid-template-columns: 1fr;
+    justify-items: center;
+  }
+}
+
+.ring {
+  position: relative;
+  width: 180px;
+  height: 180px;
+}
+
+.center {
+  position: absolute;
+  inset: 40px;
+  display: grid;
+  place-content: center;
+  text-align: center;
+  pointer-events: none;
+}
+
+.centerLabel {
+  max-width: 96px;
+  overflow: hidden;
+  font-size: 0.75rem;
+  color: var(--muted);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.centerValue {
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.list {
+  display: grid;
+  gap: 2px;
+  width: 100%;
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+
+.item {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  padding: 6px 8px;
+  margin: 0 -8px;
+  color: inherit;
+  text-decoration: none;
+  border-radius: var(--radius-sm);
+  transition: background-color 0.15s;
+}
+
+a.item:hover,
+.hover {
+  background: var(--surface-2);
+}
+
+.name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  font-size: 0.9rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.share {
+  font-size: 0.8125rem;
+  color: var(--muted);
+}
+
+.amount {
+  min-width: 84px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  text-align: right;
+}
+
+.restItem {
+  color: var(--muted);
+}
+
+.restDot {
+  width: 28px;
+  height: 28px;
+  background: var(--surface-2);
+  border-radius: 8px;
+}

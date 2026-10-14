@@ -1,0 +1,41 @@
+.root {
+  display: inline-flex;
+  align-items: center;
+  height: 40px;
+  padding: 0 4px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+}
+
+.label {
+  min-width: 132px;
+  font-weight: 600;
+  text-align: center;
+}
+
+.arrow {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  color: var(--muted);
+  cursor: pointer;
+  background: none;
+  border: 0;
+  border-radius: 6px;
+
+  &:hover:not(:disabled) {
+    color: var(--text);
+    background: var(--surface-2);
+  }
+
+  &:disabled {
+    cursor: default;
+    opacity: 0.3;
+  }
+
+  svg {
+    width: 18px;
+  }
+}

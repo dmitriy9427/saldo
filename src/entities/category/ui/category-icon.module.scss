@@ -1,0 +1,27 @@
+.icon {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  color: var(--c);
+  // Фон — тот же цвет, но прозрачный: color-mix смешивает с прозрачностью.
+  background: color-mix(in srgb, var(--c) 14%, transparent);
+  border-radius: 12px;
+
+  svg {
+    width: 20px;
+    height: 20px;
+  }
+}
+
+.sm {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+
+  svg {
+    width: 15px;
+    height: 15px;
+  }
+}

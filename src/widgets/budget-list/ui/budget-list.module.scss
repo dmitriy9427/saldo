@@ -1,0 +1,90 @@
+.stale {
+  opacity: 0.6;
+  transition: opacity 0.2s;
+}
+
+.list {
+  display: grid;
+  gap: 18px;
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+
+.grid {
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 14px;
+}
+
+.item {
+  display: grid;
+  gap: 8px;
+}
+
+.full {
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+}
+
+.head {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  font-weight: 550;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.numbers {
+  font-size: 0.875rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.of {
+  font-weight: 400;
+  color: var(--muted);
+}
+
+.status {
+  font-size: 0.8125rem;
+  color: var(--muted);
+}
+
+.warning {
+  color: var(--warning);
+}
+
+.over {
+  color: var(--expense);
+}
+
+.actions {
+  display: flex;
+  gap: 4px;
+  justify-content: flex-end;
+  padding-top: 4px;
+  border-top: 1px solid var(--border);
+
+  > :first-child {
+    margin-right: auto;
+  }
+}
+
+.more {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--accent);
+  text-decoration: none;
+
+  &:hover {
+    text-decoration: underline;
+  }
+}

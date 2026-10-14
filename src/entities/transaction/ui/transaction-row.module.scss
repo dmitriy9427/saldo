@@ -1,0 +1,105 @@
+.row {
+  position: relative;
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  min-height: 60px;
+  padding: 8px 12px;
+  margin: 0 -12px;
+  border-radius: var(--radius-md);
+  transition: background-color 0.15s;
+
+  &:hover {
+    background: var(--surface-2);
+  }
+}
+
+.transfer {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  color: var(--muted);
+  background: var(--surface-2);
+  border-radius: 12px;
+
+  svg {
+    width: 18px;
+  }
+}
+
+.main {
+  display: grid;
+  flex: 1;
+  gap: 2px;
+  min-width: 0;
+  padding: 0;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  background: none;
+  border: 0;
+
+  &:disabled {
+    cursor: default;
+  }
+
+  &:focus-visible {
+    border-radius: 4px;
+    outline: 2px solid var(--accent);
+    outline-offset: 4px;
+  }
+}
+
+.title {
+  overflow: hidden;
+  font-weight: 550;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.subtitle {
+  overflow: hidden;
+  font-size: 0.8125rem;
+  color: var(--muted);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.amount {
+  font-weight: 600;
+}
+
+.actions {
+  // Кнопки появляются поверх суммы при наведении: в покое сумма стоит у правого
+  // края, и столбец сумм ровный (невидимые кнопки не занимают места).
+  position: absolute;
+  top: 50%;
+  right: 8px;
+  display: flex;
+  gap: 2px;
+  padding-left: 24px;
+  pointer-events: none;
+  background: linear-gradient(90deg, transparent, var(--surface-2) 24px);
+  opacity: 0;
+  translate: 0 -50%;
+  transition: opacity 0.15s;
+
+  .row:hover &,
+  .row:focus-within & {
+    pointer-events: auto;
+    opacity: 1;
+  }
+
+  // На тач-экранах наведения нет — кнопки всегда видны, в потоке после суммы.
+  @media (hover: none) {
+    position: static;
+    padding: 0;
+    pointer-events: auto;
+    background: none;
+    opacity: 1;
+    translate: none;
+  }
+}

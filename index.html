@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="description" content="Сальдо — учёт личных финансов: операции, бюджеты, графики, импорт выписки. Демо на React, Redux Toolkit, RTK Query и Feature-Sliced Design." />
+    <meta name="theme-color" content="#f4f5f9" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#0e1016" media="(prefers-color-scheme: dark)" />
+    <link rel="icon" href="favicon.svg" type="image/svg+xml" />
+    <title>Сальдо — личные финансы</title>
+    <style>
+      /* Заставка до запуска приложения (React заменит содержимое #root). */
+      .boot {
+        position: fixed;
+        inset: 0;
+        display: grid;
+        place-items: center;
+        background: #f4f5f9;
+      }
+      .boot::after {
+        width: 44px;
+        height: 44px;
+        content: 'С';
+        display: grid;
+        place-items: center;
+        font: 700 22px/1 system-ui, sans-serif;
+        color: #fff;
+        background: linear-gradient(135deg, #5b5bd6, #22c55e);
+        border-radius: 13px;
+        animation: boot 1.2s ease-in-out infinite;
+      }
+      @keyframes boot {
+        50% { opacity: 0.5; scale: 0.92; }
+      }
+      @media (prefers-color-scheme: dark) {
+        :root:not([data-theme='light']) .boot { background: #0e1016; }
+      }
+      :root[data-theme='dark'] .boot { background: #0e1016; }
+    </style>
+    <script>
+      // Тема до загрузки JS: без этого тёмная тема «мигает» светлой при открытии.
+      try {
+        const theme = localStorage.getItem('saldo:theme')
+        if (theme) document.documentElement.dataset.theme = theme
+      } catch {}
+    </script>
+  </head>
+  <body>
+    <div id="root"><div class="boot" role="status" aria-label="Загрузка"></div></div>
+    <script type="module" src="/src/app/entrypoint/main.tsx"></script>
+  </body>
+</html>
