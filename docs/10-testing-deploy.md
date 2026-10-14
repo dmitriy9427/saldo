@@ -1,63 +1,161 @@
-# 10. Тесты и публикация
+# 10. Тесты и публикация — с нуля
+
+## Зачем тесты
+
+Тест — это маленькая программа, которая проверяет вашу программу. Вы меняете код, запускаете
+`npm test` и за секунды узнаёте, не сломалось ли то, что работало вчера. Без тестов это
+выясняет пользователь.
+
+## Пирамида: много маленьких, мало больших
+
+```
+              ╱╲            E2E (Playwright): настоящий браузер, 7 сценариев.
+             ╱  ╲           Медленно, но проверяет «как у пользователя».
+            ╱────╲
+           ╱      ╲         Интеграция: store + RTK Query + MSW, форма в jsdom.
+          ╱        ╲        Проверяют, что части работают вместе.
+         ╱──────────╲
+        ╱            ╲      Чистые функции: деньги, даты, разбор CSV, бюджет.
+       ╱              ╲     Мгновенно, их больше всего.
+      ╱────────────────╲
+```
 
 ```bash
-npm test        # Vitest: функции, слайсы, RTK Query + MSW, компоненты
-npm run e2e     # Playwright: собранное приложение в браузере
-npm run check   # oxlint + Steiger, типы, тесты, сборка
+npm test                 # Vitest: всё, кроме браузера (~3 секунды)
+npm run e2e              # Playwright: собрать, открыть в Chrome, пройти сценарии
+npm run check:mobile     # все страницы на ширине 320–414 px: ничего не вылезает?
+npm run check            # линтеры + типы + тесты + сборка — то же, что в CI
 ```
 
-## Пирамида
+## Уровень 1: чистые функции
 
-| Уровень | Что | Пример |
-| --- | --- | --- |
-| Чистые функции | деньги, даты, разбор CSV, темп бюджета, фильтры из адреса | [money.test.ts](../src/shared/lib/money.test.ts) |
-| Демо-база | фильтры, итоги, остатки, проверки, дубликаты | [db.test.ts](../src/shared/mock/db.test.ts) |
-| Redux | слайс импорта, мемоизация селекторов | [import-slice.test.ts](../src/features/import-statement/model/import-slice.test.ts) |
-| RTK Query + MSW | инвалидация тегов, оптимистичное обновление и откат | [transaction-api.test.ts](../src/entities/transaction/api/transaction-api.test.ts) |
-| Listener + таймеры | удаление с отменой | [delete-flow.test.ts](../src/features/delete-transaction/model/delete-flow.test.ts) |
-| Компоненты | форма: свои ошибки, ошибки сервера, сохранение | [transaction-form.test.tsx](../src/features/transaction-form/ui/transaction-form.test.tsx) |
-| E2E | сценарии в браузере, телефон | [e2e/app.spec.ts](../e2e/app.spec.ts) |
-
-## RTK Query в тестах — без моков fetch
-
-[test/utils.tsx](../test/utils.tsx): настоящий store приложения + MSW в Node. Тест работает
-с тем же кодом, что и браузер. Подписка на запрос — как у смонтированного компонента:
+Самые простые тесты: дали вход — проверили выход ([money.test.ts](../src/shared/lib/money.test.ts)):
 
 ```ts
-const sub = store.dispatch(transactionApi.endpoints.getTransactions.initiate(query))
-await store.dispatch(transactionApi.endpoints.createTransaction.initiate(input)).unwrap()
-await settle(store) // дождаться перезапросов после инвалидации
+import { describe, expect, it } from 'vitest'
+import { parseMoney } from './money'
+
+describe('parseMoney', () => {
+  it('понимает запятую и пробелы', () => {
+    expect(parseMoney('1 234,5')).toBe(123450)
+  })
+
+  it.each([
+    ['1.15', 115],          // ловушка плавающей точки
+    ['2,000.00', 200000],   // английский формат
+  ])('«%s» → %i', (input, expected) => {
+    expect(parseMoney(input)).toBe(expected)
+  })
+})
 ```
 
-Ответ сервера под конкретный тест — `server.use(http.patch(…, () => HttpResponse.json(…, { status: 422 })))`.
+- `describe` — группа, `it` — один случай;
+- `expect(x).toBe(y)` — «x должен быть равен y»;
+- `it.each` — один тест на много входов (таблица).
 
-## Фейковые таймеры для listener
+## Уровень 2: RTK Query + MSW — без моков fetch
 
-Удаление ждёт 5 секунд. `vi.useFakeTimers({ shouldAdvanceTime: true })` и
-`vi.advanceTimersByTimeAsync(UNDO_MS)` — тест проходит за миллисекунды. `shouldAdvanceTime`
-нужен, чтобы промисы MSW и fetch продолжали работать.
+Частая ошибка — подменять `fetch` руками (`vi.mock`). Тогда тест проверяет вашу подделку, а
+не код. В «Сальдо» в тестах работает **тот же** демо-сервер, только в Node
+([test/utils.tsx](../test/utils.tsx)):
 
-## jsdom и `<dialog>`
+```ts
+const ctx = setupApi()                      // MSW в Node + свежая «база» на файл тестов
 
-В jsdom нет `showModal()` — простая замена в [test-setup.ts](../src/shared/config/test-setup.ts).
-Поведение настоящего диалога (фокус, Esc) проверяет Playwright в браузере.
+it('создание обновляет список', async () => {
+  const store = makeStore()                 // настоящий store приложения
 
-## Playwright
+  // Подписаться на список — как будто компонент на экране.
+  const sub = store.dispatch(transactionApi.endpoints.getTransactions.initiate(query))
+  await sub
+  const before = selectList(store.getState()).total
 
-[playwright.config.ts](../playwright.config.ts): `vite build` + `vite preview`, два проекта —
-компьютер и телефон (Pixel 7). Локально запускается в установленном Google Chrome
-(`channel: 'chrome'`), чтобы не скачивать отдельный Chromium; в CI — Chromium из
-`npx playwright install`.
+  // Создать операцию.
+  await store.dispatch(transactionApi.endpoints.createTransaction.initiate(input)).unwrap()
+  await settle(store)                       // дождаться перезапросов после инвалидации
 
-Сценарии: главная, новая операция по клавише N и после перезагрузки, клик по категории →
-фильтр в адресе, удаление с отменой, импорт, телефон без горизонтальной прокрутки.
+  expect(selectList(store.getState()).total).toBe(before + 1)
+})
+```
 
-## CI и GitHub Pages
+Ответ сервера для одного теста подменяется так:
 
-[.github/workflows/pages.yml](../.github/workflows/pages.yml): линтеры, типы, тесты, e2e, затем
-сборка с `VITE_BASE=/saldo/` и публикация. Сломанный код на сайт не попадёт.
+```ts
+ctx.server.use(
+  http.patch(`${API_URL}/transactions/:id`, () =>
+    HttpResponse.json({ fields: { note: 'Нельзя' } }, { status: 422 })),
+)
+```
 
-- `base` в Vite и `basename` в роутере — сайт живёт в подпапке `/saldo/`;
-- `404.html` — копия `index.html`: GitHub Pages на `/saldo/transactions` отдаёт 404.html,
-  а это то же приложение — роутер покажет нужную страницу;
-- путь к `mockServiceWorker.js` — тоже с `BASE_URL`.
+## Уровень 2½: время — фейковые таймеры
+
+Удаление ждёт 5 секунд. Тест не должен ждать по-настоящему. Vitest умеет «перематывать время»:
+
+```ts
+vi.useFakeTimers({ shouldAdvanceTime: true })
+
+store.dispatch(deleteRequested(transaction))
+await vi.advanceTimersByTimeAsync(4900)      // прошло 4,9 с — ещё не удалено
+expect(() => db.transaction(id)).not.toThrow()
+
+await vi.advanceTimersByTimeAsync(200)       // прошло 5,1 с — удалено
+await vi.waitFor(() => expect(() => db.transaction(id)).toThrow())
+```
+
+Тест идёт миллисекунды. `shouldAdvanceTime` нужен, чтобы промисы MSW и fetch продолжали работать.
+
+## Уровень 2¾: компонент — Testing Library
+
+Тестируем форму **как пользователь**: находим поле по подписи, печатаем, жмём кнопку
+([transaction-form.test.tsx](../src/features/transaction-form/ui/transaction-form.test.tsx)):
+
+```ts
+await userEvent.type(screen.getByLabelText('Сумма'), '1 250,5')
+await userEvent.click(screen.getByRole('radio', { name: 'Кафе и рестораны' }))
+await userEvent.click(screen.getByRole('button', { name: 'Добавить' }))
+
+expect(db.transactions({ q: 'Ужин' }).items[0]).toMatchObject({ amount: 125050 })
+```
+
+Поиск по **подписи и роли**, а не по классам: тест заодно проверяет доступность. Если у поля
+нет подписи, `getByLabelText` его не найдёт.
+
+## Уровень 3: E2E — Playwright
+
+Настоящий Chrome открывает собранный сайт ([e2e/app.spec.ts](../e2e/app.spec.ts)):
+
+```ts
+test('новая операция по клавише N', async ({ page }) => {
+  await page.goto('/transactions')
+  await page.keyboard.press('n')
+  const dialog = page.getByRole('dialog', { name: 'Новая операция' })
+  await dialog.getByLabel('Сумма').fill('321,5')
+  await dialog.locator('label', { hasText: 'Подарки' }).click()
+  await dialog.getByRole('button', { name: 'Добавить' }).click()
+  await expect(page.getByText('Добавлено: 321,50 ₽')).toBeVisible()
+})
+```
+
+Два проекта: компьютер и телефон (Pixel 7). На телефоне проверяется, что ни на одной странице
+нет прокрутки вбок и что нижнее меню прячется при прокрутке.
+
+## CI: проверка на каждый push
+
+[.github/workflows/pages.yml](../.github/workflows/pages.yml) — инструкция для GitHub:
+
+```mermaid
+flowchart LR
+    P[git push] --> L[линтеры] --> TY[типы] --> T[тесты] --> E[e2e] --> B[сборка] --> D[публикация на Pages]
+    T -.->|упало| X[стоп: сайт не обновится]
+```
+
+Сломанный код не попадёт на сайт: любой красный шаг останавливает публикацию.
+
+## GitHub Pages: три тонкости
+
+1. **Подпапка.** Сайт живёт по адресу `/saldo/`, а не `/`. Поэтому `base` в Vite и `basename`
+   в роутере берутся из переменной `VITE_BASE`.
+2. **Обновление на внутренней странице.** Откройте `/saldo/transactions` и нажмите F5. GitHub
+   Pages ищет файл `transactions` — его нет — и отдаёт `404.html`. А `404.html` — это **копия**
+   `index.html`, то есть то же приложение. Роутер видит адрес и показывает нужную страницу.
+3. **Service Worker** тоже лежит в подпапке: `${BASE_URL}mockServiceWorker.js`.

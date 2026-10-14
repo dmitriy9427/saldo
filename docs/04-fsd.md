@@ -1,95 +1,221 @@
-# 04. Feature-Sliced Design
+# 04. Feature-Sliced Design — с нуля
 
-FSD — способ разложить фронтенд по папкам так, чтобы было понятно, **куда положить новый код**
-и **что сломается, если его поменять**. Стандарт описан на [feature-sliced.design](https://feature-sliced.design).
+## Зачем
 
-## Слои
+Новый проект начинается с папок `components/`, `hooks/`, `utils/`. Через полгода в
+`components/` лежит 140 файлов, `utils.ts` разросся до 2000 строк, и на каждый вопрос «куда
+положить этот файл?» в команде два разных ответа. Ещё хуже: поменяли кнопку — сломалась
+корзина, потому что всё импортирует всё.
 
-Сверху вниз; импортировать можно **только из слоёв ниже**:
+**FSD — это договорённость, куда класть код и кто кого может импортировать.** Документация
+стандарта: [feature-sliced.design](https://feature-sliced.design).
 
-| Слой | Что здесь | Примеры в «Сальдо» |
-| --- | --- | --- |
-| `app` | запуск: store, маршруты, глобальные стили | `app/model/store.ts`, `app/routes/router.tsx` |
-| `pages` | страницы: раскладка виджетов, состояние страницы | `pages/dashboard` — месяц в адресе + 6 виджетов |
-| `widgets` | самостоятельные блоки интерфейса | `widgets/transaction-list`, `widgets/cashflow-chart` |
-| `features` | действия пользователя, приносящие пользу | `features/transaction-form`, `features/delete-transaction` |
-| `entities` | бизнес-сущности: данные и их отображение | `entities/transaction`, `entities/budget` |
-| `shared` | без бизнес-логики, можно унести в другой проект | `shared/ui`, `shared/lib/money.ts`, `shared/api` |
+## Аналогия: дом
 
-Правило направления даёт главное: **изменение в фиче не может сломать сущность**, а
-изменение в `shared` видно сразу — от него зависят все.
-
-## Слайсы и сегменты
-
-Внутри слоя (кроме `app` и `shared`) — **слайсы** по предметной области: `transaction`,
-`budget`, `import-statement`. Слайсы одного слоя **не импортируют друг друга**.
-
-Внутри слайса — **сегменты** по назначению: `ui`, `model`, `api`, `lib`, `config`.
-Названия — по назначению, а не по виду: не `hooks`, `components`, `types`, `providers`.
-Steiger это проверяет — в `app` у меня сначала были `store/` и `providers/`, линтер заставил
-переименовать в `model/` и `entrypoint/`.
-
-## Публичный API
-
-У каждого слайса — `index.ts`, наружу только он:
-
-```ts
-// entities/transaction/index.ts
-export { useGetTransactionsQuery, … } from './api/transaction-api'
-export { groupByDay, signedAmount, TYPE_LABEL } from './lib/group-by-day'
-export { TransactionRow } from './ui/transaction-row'
+```
+app        крыша и фундамент    подключение электричества, воды (store, роутер)
+pages      квартиры             «гостиная» — какая мебель где стоит
+widgets    мебель               шкаф, кухонный гарнитур — собраны из деталей
+features   действия             «открыть шкаф», «включить плиту»
+entities   детали               дверца, полка, конфорка
+shared     стройматериалы       шурупы, доски, краска — подходят к любому дому
 ```
 
-Снаружи — `import { TransactionRow } from '@/entities/transaction'`, никогда
-`@/entities/transaction/ui/transaction-row`. Внутри слайса можно перекладывать файлы как
-угодно — пока `index.ts` тот же, никто снаружи не заметит.
+**Главное правило:** этаж может использовать только то, что **ниже** него. Шкаф собирают из
+досок, но доска ничего не знает про шкаф. Поэтому можно перекрасить шкаф, не трогая доски, а
+если поменять доски — увидишь сразу, что затронет все шкафы.
 
-## Как я раскладывал: решения и спорные места
+```mermaid
+flowchart TD
+    app --> pages --> widgets --> features --> entities --> shared
+    style shared fill:#e8f5e9
+    style app fill:#fff3e0
+```
 
-**Строка операции — в сущности, но «глупая».** `TransactionRow` получает категорию, счёт,
-иконку и кнопки **пропсами**. Сущность `transaction` не импортирует `category` (слайсы одного
-слоя не видят друг друга) и тем более фичи. Собирает строку виджет
-([transaction-groups.tsx](../src/widgets/transaction-list/ui/transaction-groups.tsx)): сущность +
-сущности + фичи «изменить» и «удалить». Это типичный приём FSD — композиция наверху.
+## Три уровня: слой → слайс → сегмент
 
-**Типы API — в shared.** Демо-сервер (`shared/mock`) и сущности должны говорить на одном
-языке. Сервер в `shared` не может импортировать `entities`, поэтому контракт
-([shared/api/types.ts](../src/shared/api/types.ts)) лежит в `shared`, а сущности его используют.
-В проекте с настоящим бэкендом так же лежали бы типы, сгенерированные из OpenAPI.
+```
+src/
+├── features/                      ← СЛОЙ (этаж)
+│   ├── transaction-form/          ← СЛАЙС (одна предметная область)
+│   │   ├── model/                 ← СЕГМЕНТ (по назначению)
+│   │   │   ├── schema.ts
+│   │   │   └── form-slice.ts
+│   │   ├── ui/                    ← СЕГМЕНТ
+│   │   │   └── transaction-form.tsx
+│   │   └── index.ts               ← ПУБЛИЧНЫЙ API (что видно снаружи)
+│   └── delete-transaction/        ← другой слайс того же слоя
+```
 
-**Один createApi в shared, эндпоинты в сущностях.** `baseApi` в `shared/api` ничего не знает
-о сущностях, каждая добавляет эндпоинты через `injectEndpoints`. Эндпоинт сброса демо нужен
-только фиче `reset-demo` — он объявлен в ней же.
+Сегменты называют **по назначению**:
 
-**RootState — глобальный тип.** Хукам в `shared` нужен тип состояния, а он собирается в `app`.
-Решение — `declare global` в `app/model/global.d.ts` (глава 02).
+| Сегмент | Что внутри |
+| --- | --- |
+| `ui` | компоненты |
+| `model` | состояние: слайсы Redux, хуки с логикой, схемы |
+| `api` | запросы к серверу (эндпоинты RTK Query) |
+| `lib` | вспомогательные функции этого слайса |
+| `config` | константы, настройки |
 
-**Listener — экземпляр в shared, реакции в фичах.** `app` подключает middleware, фичи
-регистрируют реакции через `startAppListening` в своём `model/`. `app` не нужно знать о них.
+Не называйте сегменты по **виду** файлов: `components`, `hooks`, `types`, `utils`. Линтер
+Steiger ругается на это ([урок 9](lessons.md)).
 
-**Фильтры — фича, а не страница.** Хук `useTransactionFilters` (адрес ↔ запрос) и панель
-фильтров — в `features/filter-transactions`; страница только передаёт `query` в виджет.
+## Три правила импорта
 
-**Форма — одна на приложение.** Модалка операции смонтирована в каркасе (`widgets/app-shell`),
-открывается экшеном `formOpened` откуда угодно — с кнопки, клавишей N, кликом по строке.
+**1. Только вниз.**
 
-## Steiger
+```ts
+// features/transaction-form/ui/transaction-form.tsx
+import { useCategoryMap } from '@/entities/category'     // ✓ features → entities
+import { Button } from '@/shared/ui'                     // ✓ features → shared
+import { TransactionList } from '@/widgets/transaction-list'  // ✗ features → widgets (вверх!)
+```
+
+**2. Соседи на одном этаже не видят друг друга.**
+
+```ts
+// entities/transaction/ui/transaction-row.tsx
+import { CategoryIcon } from '@/entities/category'       // ✗ entities → entities
+```
+
+Как тогда показать иконку категории в строке операции? См. «Композиция наверху» ниже.
+
+**3. Снаружи — только через `index.ts`.**
+
+```ts
+import { TransactionRow } from '@/entities/transaction'                       // ✓
+import { TransactionRow } from '@/entities/transaction/ui/transaction-row'    // ✗ в обход
+```
+
+Зачем: `index.ts` — это витрина магазина. Внутри слайса можно переставлять файлы как угодно;
+пока на витрине то же самое, снаружи никто не сломается.
+
+## Куда положить файл: 12 примеров из «Сальдо»
+
+| Что | Куда | Почему |
+| --- | --- | --- |
+| Кнопка, поле ввода, модалка | `shared/ui` | ничего не знают про финансы, подойдут любому проекту |
+| `formatMoney`, `parseMoney` | `shared/lib` | общие функции без бизнес-смысла |
+| Пустой `createApi`, типы ответов сервера | `shared/api` | основа для всех запросов |
+| Демо-сервер MSW | `shared/mock` | замена бэкенда, а не часть приложения |
+| Эндпоинты операций, строка операции | `entities/transaction` | «что такое операция» |
+| Иконка категории, словарь категорий | `entities/category` | «что такое категория» |
+| Расчёт темпа бюджета `budgetPace` | `entities/budget/lib` | правило предметной области «бюджет» |
+| Форма «Новая операция» | `features/transaction-form` | действие пользователя |
+| Удаление с отменой | `features/delete-transaction` | действие пользователя |
+| Список операций по дням с кнопками | `widgets/transaction-list` | блок, собранный из сущностей и фич |
+| Главная: месяц + шесть блоков | `pages/dashboard` | раскладка страницы |
+| Store, роутер, глобальные стили | `app` | запуск приложения |
+
+**Как отличить feature от entity:** entity — это **существительное** (операция, счёт,
+категория), feature — **глагол с пользой для человека** (добавить операцию, удалить с
+отменой, отфильтровать список). Кнопка «Удалить» — фича, строка операции — сущность.
+
+## Композиция наверху
+
+Как в строке операции показать иконку категории, название счёта и кнопки «изменить» и
+«удалить», если сущность операции не может импортировать ни категорию, ни фичи?
+
+**Ответ: строка получает всё это пропсами, а собирает её тот, кто выше.**
+
+Сущность — «глупая» строка, всё снаружи
+([entities/transaction/ui/transaction-row.tsx](../src/entities/transaction/ui/transaction-row.tsx)):
+
+```tsx
+interface TransactionRowProps {
+  transaction: Transaction
+  icon: ReactNode          // иконку передаст тот, кто знает про категории
+  category?: Category
+  account?: Account
+  actions?: ReactNode      // кнопки передаст тот, кто знает про фичи
+  onOpen?: () => void
+}
+```
+
+Виджет собирает её из частей
+([widgets/transaction-list/ui/transaction-groups.tsx](../src/widgets/transaction-list/ui/transaction-groups.tsx)):
+
+```tsx
+import { CategoryIcon, useCategoryMap } from '@/entities/category'        // сущность
+import { TransactionRow } from '@/entities/transaction'                   // сущность
+import { DeleteTransactionButton } from '@/features/delete-transaction'   // фича
+import { formOpened } from '@/features/transaction-form'                  // фича
+
+<TransactionRow
+  transaction={t}
+  icon={<CategoryIcon category={categories.get(t.categoryId)} />}
+  category={categories.get(t.categoryId)}
+  account={account(t.accountId)}
+  onOpen={() => dispatch(formOpened({ editing: t }))}
+  actions={<DeleteTransactionButton transaction={t} />}
+/>
+```
+
+```mermaid
+flowchart BT
+    E1[entities/transaction<br/>TransactionRow] --> W[widgets/transaction-list]
+    E2[entities/category<br/>CategoryIcon] --> W
+    F1[features/delete-transaction<br/>кнопка] --> W
+    F2[features/transaction-form<br/>formOpened] --> W
+```
+
+Это самый частый приём FSD: **нижние слои дают детали, верхние собирают**.
+
+## Спорные места и как они решены
+
+**Типы ответов сервера лежат в `shared`, а не в сущностях.** Их используют и сущности, и
+демо-сервер в `shared/mock`. Сервер не может импортировать из `entities` (это вверх), значит,
+типы — внизу. В проекте с настоящим бэкендом так же лежали бы типы, сгенерированные из
+OpenAPI.
+
+**`RootState` — глобальный тип.** Хукам в `shared` нужен тип всего состояния, а он
+собирается в `app`. Решение — `declare global` (глава 02).
+
+**Форма — одна на всё приложение.** Её открывают с кнопки «+», клавишей N, кликом по строке.
+Модалка смонтирована один раз в каркасе (`widgets/app-shell`), а открывается экшеном
+`formOpened`. Иначе пришлось бы ставить по модалке в каждый виджет.
+
+**Эндпоинт сброса демо — в фиче, а не в сущности.** Он нужен только кнопке «Сбросить демо»,
+поэтому `features/reset-demo/api/reset-api.ts` сам делает `injectEndpoints`.
+
+## Steiger — линтер архитектуры
 
 ```bash
 npx steiger ./src
 ```
 
-Линтер архитектуры FSD: импорты только вниз, нет импортов в обход `index.ts`, правильные
-имена сегментов, нет кросс-импортов слайсов. Запускается в `npm run lint` и в CI.
+Проверяет правила этой главы: импорты только вниз, без обхода `index.ts`, имена сегментов
+по назначению. Запускается в `npm run lint` и в CI, поэтому нарушение не попадёт в `main`.
 
 Одно правило выключено — `fsd/insignificant-slice`: «слайс используется в одном месте —
-объедините». Для приложения такого размера совет верный: `cashflow-chart` используется только
-на главной и мог бы жить в `pages/dashboard`. Но проект учебный и показывает структуру,
-которая выдерживает рост, поэтому границы проведены нарочно. В рабочем проекте этого размера
-правило стоит оставить включённым и не плодить слайсы заранее.
+объедините». Для приложения такого размера совет верный: график доходов нужен только на
+главной и мог бы жить в `pages/dashboard`. Но проект учебный: границы проведены нарочно,
+чтобы показать структуру, которая выдержит рост.
 
 ## Когда FSD не нужен
 
-Лендинг, прототип, приложение на 5 экранов — хватит `components/` и `pages/`. FSD окупается,
-когда над кодом работают несколько человек и он живёт годами: правило «куда класть» снимает
-споры на ревью, а направление импортов не даёт коду превратиться в клубок.
+Лендинг, прототип на неделю, приложение на пять экранов — хватит `components/` и `pages/`.
+FSD окупается, когда над кодом работают несколько человек и он живёт годами.
+
+## Попробуйте сами
+
+1. Нужен компонент `Money` — сумма с цветом и неразрывными пробелами. Какой слой?
+2. Нужна кнопка «Дублировать операцию». Какой слой и какой слайс?
+3. Можно ли в `entities/budget` импортировать `formatMoney` из `@/shared/lib`? А
+   `useCategoryMap` из `@/entities/category`?
+4. Где должна лечь страница «Цели накоплений» с прогрессом по каждой цели?
+5. Запустите `npx steiger ./src`, затем добавьте в любой файл `entities/budget` строку
+   `import { CategoryIcon } from '@/entities/category'` и запустите снова. Что скажет линтер?
+
+<details>
+<summary>Ответы</summary>
+
+1. `shared/ui` — ничего не знает про финансы (так и сделано: `shared/ui/money.tsx`).
+2. `features/duplicate-transaction`: действие с пользой. Внутри — `ui/duplicate-button.tsx` и
+   вызов `useCreateTransactionMutation` из `@/entities/transaction`.
+3. `formatMoney` — да (вниз, в `shared`). `useCategoryMap` — нет: соседний слайс того же слоя.
+   Если бюджету нужна категория, передайте её пропсом из виджета.
+4. Сущность `entities/goal` (эндпоинты, «глупая» карточка цели) → виджет
+   `widgets/goal-list` → страница `pages/goals`. Действия «создать цель» и «пополнить» — фичи.
+5. Ошибку `fsd/forbidden-imports`: кросс-импорт между слайсами одного слоя.
+</details>
