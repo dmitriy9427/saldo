@@ -5,7 +5,7 @@ import { NavLink, Outlet, useLocation } from 'react-router'
 import { ResetDemoButton } from '@/features/reset-demo'
 import { ThemeToggle, useApplyTheme } from '@/features/toggle-theme'
 import { TransactionFormModal, formOpened } from '@/features/transaction-form'
-import { cx } from '@/shared/lib'
+import { cx, useHideOnScroll } from '@/shared/lib'
 import { useAppDispatch } from '@/shared/model'
 import { Button, Toaster } from '@/shared/ui'
 
@@ -23,6 +23,7 @@ const NAV = [
 export function AppShell() {
   const dispatch = useAppDispatch()
   const { pathname } = useLocation()
+  const tabbarHidden = useHideOnScroll()
   useApplyTheme()
 
   // Клавиша N — новая операция (если фокус не в поле ввода и не открыто окно).
@@ -93,7 +94,9 @@ export function AppShell() {
         <Outlet />
       </main>
 
-      <nav aria-label="Разделы" className={s.tabbar}>
+      {/* Нижнее меню телефона: уезжает при прокрутке вниз, возвращается при прокрутке вверх.
+          Фокус внутри (Tab с клавиатуры) — всегда видно, см. :focus-within в стилях. */}
+      <nav aria-label="Разделы" className={cx(s.tabbar, tabbarHidden && s.tabbarHidden)}>
         {NAV.slice(0, 2).map(({ to, label, Icon, end }) => (
           <NavLink key={to} to={to} end={end} className={({ isActive }) => cx(s.tab, isActive && s.active)}>
             <Icon aria-hidden />

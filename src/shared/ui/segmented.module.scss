@@ -1,6 +1,8 @@
 .root {
   position: relative;
   display: grid;
+  min-width: 0;
+  max-width: 100%;
   grid-template-columns: repeat(var(--count), 1fr);
   padding: 3px;
   background: var(--surface-2);
@@ -21,8 +23,11 @@
 
 .option {
   position: relative;
+  min-width: 0;
   height: 34px;
   padding: 0 12px;
+  overflow: hidden;
+  text-overflow: ellipsis;
   font: inherit;
   font-weight: 550;
   color: var(--muted);
@@ -46,4 +51,12 @@
 .sm .option {
   height: 28px;
   font-size: 0.8125rem;
+}
+
+// Узкий телефон: четыре варианта должны влезть в 288 px.
+@media (width <= 400px) {
+  .option {
+    padding: 0 6px;
+    font-size: 0.8125rem;
+  }
 }

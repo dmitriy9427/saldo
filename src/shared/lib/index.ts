@@ -14,3 +14,4 @@ export {
 } from './date'
 export { cx } from './cx'
 export { useMonthParam } from './use-month-param'
+export { useHideOnScroll } from './use-hide-on-scroll'

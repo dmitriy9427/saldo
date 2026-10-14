@@ -1,5 +1,8 @@
 .card {
   display: grid;
+  // minmax(0, 1fr), а не 1fr: иначе колонка не уже самого широкого содержимого
+  // (длинная строка без переносов) и распирает карточку на узком экране.
+  grid-template-columns: minmax(0, 1fr);
   gap: 16px;
   align-content: start;
   min-width: 0;

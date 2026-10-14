@@ -73,8 +73,28 @@ test.describe('Сальдо', () => {
     await expect(tabs).toBeVisible()
     await page.getByRole('button', { name: 'Новая операция' }).click()
     await expect(page.getByRole('dialog', { name: 'Новая операция' })).toBeVisible()
-    // Нет горизонтальной прокрутки страницы.
-    const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth)
-    expect(overflow).toBeLessThanOrEqual(0)
+    await page.keyboard.press('Escape')
+    // Нет горизонтальной прокрутки ни на одной странице.
+    for (const path of ['/', '/transactions', '/budgets', '/accounts', '/import']) {
+      await openApp(page, path)
+      await page.waitForLoadState('networkidle')
+      const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth)
+      expect(overflow, path).toBeLessThanOrEqual(0)
+    }
+  })
+
+  test('телефон: нижнее меню уезжает при прокрутке вниз и возвращается вверх @mobile', async ({ page }) => {
+    await openApp(page, '/transactions')
+    await page.waitForLoadState('networkidle')
+    const tabs = page.getByRole('navigation', { name: 'Разделы' }).last()
+    const height = page.viewportSize()!.height
+    await expect(tabs).toBeInViewport()
+
+    await page.mouse.wheel(0, 500)
+    await expect.poll(async () => (await tabs.boundingBox())!.y).toBeGreaterThanOrEqual(height)
+
+    await page.mouse.wheel(0, -200)
+    // 0.95, а не 1: у Pixel 7 плотность 2,625 — полпикселя теряется на округлении.
+    await expect(tabs).toBeInViewport({ ratio: 0.95 })
   })
 })

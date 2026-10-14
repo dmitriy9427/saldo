@@ -9,9 +9,14 @@
   gap: 12px;
 }
 
+.top > [role='radiogroup'] {
+  flex: 1 1 auto;
+}
+
 .search {
   position: relative;
   flex: 1 1 260px;
+  min-width: 0;
 
   svg {
     position: absolute;
