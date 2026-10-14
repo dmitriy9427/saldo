@@ -47,8 +47,10 @@ test.describe('Сальдо', () => {
   test('удаление с отменой', async ({ page }) => {
     await openApp(page, '/transactions')
     const first = page.locator('main li').first()
-    // Ждём, пока подтянутся категории и счета: строка полностью собрана.
+    // Ждём, пока подтянутся и счета (« · Основная карта»), и категории (вместо «…»):
+    // строка собрана полностью. В CI запросы приходят в разном порядке.
     await expect(first).toContainText(' · ')
+    await expect(first).not.toContainText('…')
     const title = (await first.textContent()) ?? ''
     await first.hover()
     await first.getByRole('button', { name: 'Удалить операцию' }).click()
